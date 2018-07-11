@@ -18,30 +18,45 @@ package com.example.android.teatime;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
+import android.support.test.espresso.IdlingResource;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
+import com.example.android.teatime.IdlingResource.SimpleIdlingResource;
 import com.example.android.teatime.model.Tea;
 
 import java.util.ArrayList;
 
 // TODO (1) Implement ImageDownloader.DelayerCallback
-public class MenuActivity extends AppCompatActivity {
+public class MenuActivity extends AppCompatActivity implements ImageDownloader.DelayerCallback {
 
     Intent mTeaIntent;
 
     public final static String EXTRA_TEA_NAME = "com.example.android.teatime.EXTRA_TEA_NAME";
 
     // TODO (2) Add a SimpleIdlingResource variable that will be null in production
+    @Nullable
+    private SimpleIdlingResource mIdlingResource;
 
     /**
      * TODO (3) Create a method that returns the IdlingResource variable. It will
      * instantiate a new instance of SimpleIdlingResource if the IdlingResource is null.
      * This method will only be called from test.
      */
+    @VisibleForTesting
+    @NonNull
+    public IdlingResource getIdlingResource() {
+        if(mIdlingResource == null) {
+            mIdlingResource = new SimpleIdlingResource();
+        }
+        return mIdlingResource;
+    }
 
 
     /**
@@ -65,18 +80,21 @@ public class MenuActivity extends AppCompatActivity {
         setSupportActionBar(menuToolbar);
         getSupportActionBar().setTitle(getString(R.string.menu_title));
 
+        getIdlingResource();
+
         // Create an ArrayList of teas
-        final ArrayList<Tea> teas = new ArrayList<>();
+        /*final ArrayList<Tea> teas = new ArrayList<>();
         teas.add(new Tea(getString(R.string.black_tea_name), R.drawable.black_tea));
         teas.add(new Tea(getString(R.string.green_tea_name), R.drawable.green_tea));
         teas.add(new Tea(getString(R.string.white_tea_name), R.drawable.white_tea));
         teas.add(new Tea(getString(R.string.oolong_tea_name), R.drawable.oolong_tea));
         teas.add(new Tea(getString(R.string.honey_lemon_tea_name), R.drawable.honey_lemon_tea));
-        teas.add(new Tea(getString(R.string.chamomile_tea_name), R.drawable.chamomile_tea));
+        teas.add(new Tea(getString(R.string.chamomile_tea_name), R.drawable.chamomile_tea));*/
+
 
         // Create a {@link TeaAdapter}, whose data source is a list of {@link Tea}s.
         // The adapter know how to create grid items for each item in the list.
-        GridView gridview = (GridView) findViewById(R.id.tea_grid_view);
+       /* GridView gridview = (GridView) findViewById(R.id.tea_grid_view);
         TeaMenuAdapter adapter = new TeaMenuAdapter(this, R.layout.grid_item_layout, teas);
         gridview.setAdapter(adapter);
 
@@ -92,6 +110,32 @@ public class MenuActivity extends AppCompatActivity {
                 String teaName = item.getTeaName();
                 mTeaIntent.putExtra(EXTRA_TEA_NAME, teaName);
                 startActivity(mTeaIntent);
+            }
+        });*/
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        ImageDownloader.downloadImage(this, MenuActivity.this, mIdlingResource);
+    }
+
+    @Override
+    public void onDone(ArrayList<Tea> teas) {
+        GridView gridview = (GridView) findViewById(R.id.tea_grid_view);
+        TeaMenuAdapter adapter = new TeaMenuAdapter(this, R.layout.grid_item_layout, teas);
+        gridview.setAdapter(adapter);
+
+        gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+
+                Tea item = (Tea) adapterView.getItemAtPosition(position);
+                mTeaIntent = new Intent(MenuActivity.this, OrderActivity.class);
+                String teaName = item.getTeaName();
+                mTeaIntent.putExtra(EXTRA_TEA_NAME, teaName);
+                startActivity(mTeaIntent);
+
             }
         });
     }
